@@ -21,7 +21,7 @@ Provide concise operational recommendations only when supported by evidence.
 
 
 root_agent = Agent(
-    name="ShotOps Production Operations Agent",
+    name="shotops_production_operations_agent",
     model=settings.GEMINI_MODEL,
     instruction=SYSTEM_INSTRUCTION,
     tools=[
