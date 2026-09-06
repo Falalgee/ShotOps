@@ -112,6 +112,7 @@ async def stream_events(
     emitter = investigation["emitter"]
 
     async def event_generator():
+        # Send events that already exist.
         for event in emitter.get_all_events():
             yield f"data: {json.dumps(event.model_dump())}\n\n"
 

@@ -1,6 +1,5 @@
-from typing import Any, Dict, List, Literal, Optional
-
 from pydantic import BaseModel, Field
+from typing import List, Optional, Literal, Dict, Any
 
 
 class AgentEvent(BaseModel):
@@ -8,13 +7,7 @@ class AgentEvent(BaseModel):
     investigationId: str
     timestamp: str
     eventType: str
-    status: Literal[
-        "pending",
-        "running",
-        "success",
-        "error",
-        "interrupted",
-    ]
+    status: Literal["pending", "running", "success", "error", "interrupted"]
     agent: Optional[str] = None
     tool: Optional[str] = None
     inputSummary: Optional[str] = None

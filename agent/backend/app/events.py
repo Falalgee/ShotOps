@@ -30,6 +30,8 @@ def adapt_adk_event(
     investigation_id: str,
     run_id: str,
 ) -> Optional[AgentEvent]:
+    """Convert a Google ADK event into a ShotOps AgentEvent."""
+
     author = getattr(adk_event, "author", None)
     content = getattr(adk_event, "content", None)
     invocation_id = getattr(adk_event, "invocation_id", None)
@@ -40,28 +42,35 @@ def adapt_adk_event(
     if callable(is_final):
         is_final = is_final()
 
+    # Extract text from ADK Content parts.
     text_parts = []
 
     if content and hasattr(content, "parts"):
         for part in content.parts:
             text = getattr(part, "text", None)
+
             if text:
                 text_parts.append(text)
 
     output_text = "\n".join(text_parts) if text_parts else None
 
+    # Map ADK events to the ShotOps event schema.
     if author == "user":
         event_type = "MISSION_RECEIVED"
         status = "success"
+
     elif is_final:
         event_type = "COMPLETED"
         status = "success"
+
     elif author == "model":
         event_type = "INTENT_ANALYSIS"
         status = "success"
+
     elif author and "tool" in author.lower():
         event_type = "TOOL_CALL_STARTED"
         status = "running"
+
     else:
         event_type = "ADK_EVENT"
         status = "success"
