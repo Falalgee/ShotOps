@@ -1,3 +1,4 @@
+from fastapi.staticfiles import StaticFiles
 import asyncio
 import json
 import uuid
@@ -158,3 +159,5 @@ async def stream_events(
             "Connection": "keep-alive",
         },
     )
+
+app.mount("/", StaticFiles(directory="app/static", html=True), name="static")
