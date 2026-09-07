@@ -2,3 +2,9 @@
 __pycache__/
 *.pyc
 *.swp
+
+.env.bak
+.envprintf
+fix_env.py
+inspect_env.py
+parse_env.py
