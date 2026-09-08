@@ -430,7 +430,17 @@
         function renderReport(markdown) {
             reportEmptyState.classList.add('hidden');
             reportContent.classList.remove('hidden');
-            reportContent.innerHTML = marked.parse(markdown);
+            
+      // Configure marked.js to open links in a new tab with ShotOps styling
+      const renderer = new marked.Renderer();
+      const originalLink = renderer.link.bind(renderer);
+      renderer.link = function(href, title, text) {
+        const out = originalLink(href, title, text);
+        return out.replace('<a ', '<a target="_blank" rel="noopener noreferrer" class="text-[#f2ca50] hover:underline font-mono inline-flex items-center gap-1" ');
+      };
+      marked.setOptions({ renderer: renderer, breaks: true });
+
+        reportContent.innerHTML = marked.parse(markdown);
             reportStatus.textContent = 'Completed';
             reportStatus.className = 'text-xs text-[#10b981]';
         }
