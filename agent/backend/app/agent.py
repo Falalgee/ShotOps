@@ -8,9 +8,12 @@ from .tools import grafana_query
 # Force API Key auth and handle 429/503 rate limits
 _orig_client_init = google.genai.Client.__init__
 def _forced_client_init(self, *args, **kwargs):
-    if not kwargs.get("api_key"):
-        kwargs["api_key"] = settings.GOOGLE_API_KEY
+    kwargs["api_key"] = settings.GOOGLE_API_KEY
+    kwargs["credentials"] = None
     _orig_client_init(self, *args, **kwargs)
+    if hasattr(self, "_api_client") and self._api_client:
+        self._api_client._credentials = None
+        self._api_client.api_key = settings.GOOGLE_API_KEY
 
     _orig_aio_gen = self.aio.models.generate_content
     async def _paced_gen(*g_args, **g_kwargs):

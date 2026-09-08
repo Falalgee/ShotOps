@@ -1,3 +1,10 @@
+import os
+os.environ["GCE_METADATA_HOST"] = "127.0.0.1:9999"
+
+import google.auth
+from google.auth.exceptions import DefaultCredentialsError
+google.auth.default = lambda *a, **kw: (_ for _ in ()).throw(DefaultCredentialsError("GCP metadata blocked in favor of API Key"))
+
 from fastapi.staticfiles import StaticFiles
 import asyncio
 import json
