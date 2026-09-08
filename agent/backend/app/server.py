@@ -1,4 +1,21 @@
 import os
+from google.genai import _api_client
+from app.config import settings
+
+# Strip any OAuth Bearer header so Google authenticates solely via API Key
+_orig_async_request_once = _api_client.ApiClient._async_request_once
+
+async def _clean_async_request_once(self, http_request, stream=False):
+    if "authorization" in http_request.headers:
+        del http_request.headers["authorization"]
+    if "Authorization" in http_request.headers:
+        del http_request.headers["Authorization"]
+    http_request.headers["x-goog-api-key"] = settings.GOOGLE_API_KEY
+    return await _orig_async_request_once(self, http_request, stream=stream)
+
+_api_client.ApiClient._async_request_once = _clean_async_request_once
+
+import os
 os.environ["GCE_METADATA_HOST"] = "127.0.0.1:9999"
 
 import google.auth
