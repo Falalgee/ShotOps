@@ -2,12 +2,17 @@ from google.adk.agents import Agent
 
 from .config import settings
 
-# Force API Key auth to prevent ADK from misidentifying AQ. keys as OAuth
+from google.genai import types
+from google.genai.types import HttpOptions
+
+# Force API Key auth and auto-retry on 429
 import google.genai
 _orig_client_init = google.genai.Client.__init__
 def _forced_client_init(self, *args, **kwargs):
     if not kwargs.get("api_key"):
         kwargs["api_key"] = settings.GOOGLE_API_KEY
+    http_opts = kwargs.get("http_options") or HttpOptions()
+    kwargs["http_options"] = http_opts
     _orig_client_init(self, *args, **kwargs)
 google.genai.Client.__init__ = _forced_client_init
 
