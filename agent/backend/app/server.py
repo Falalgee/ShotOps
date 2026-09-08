@@ -1,19 +1,29 @@
 import os
-from google.genai import _api_client
+os.environ["GCE_METADATA_HOST"] = "127.0.0.1:9999"
+
+import httpx
 from app.config import settings
 
-# Strip any OAuth Bearer header so Google authenticates solely via API Key
-_orig_async_request_once = _api_client.BaseApiClient._async_request_once
-
-async def _clean_async_request_once(self, http_request, stream=False):
-    if hasattr(http_request, "headers"):
-        for k in list(http_request.headers.keys()):
+# Intercept outgoing HTTP traffic at the socket level
+_orig_async_send = httpx.AsyncClient.send
+async def _clean_async_send(self, request, *args, **kwargs):
+    if "googleapis.com" in str(request.url):
+        for k in list(request.headers.keys()):
             if k.lower() == "authorization":
-                del http_request.headers[k]
-    http_request.headers["x-goog-api-key"] = settings.GOOGLE_API_KEY
-    return await _orig_async_request_once(self, http_request, stream=stream)
+                del request.headers[k]
+        request.headers["x-goog-api-key"] = settings.GOOGLE_API_KEY
+    return await _orig_async_send(self, request, *args, **kwargs)
+httpx.AsyncClient.send = _clean_async_send
 
-_api_client.BaseApiClient._async_request_once = _clean_async_request_once
+_orig_sync_send = httpx.Client.send
+def _clean_sync_send(self, request, *args, **kwargs):
+    if "googleapis.com" in str(request.url):
+        for k in list(request.headers.keys()):
+            if k.lower() == "authorization":
+                del request.headers[k]
+        request.headers["x-goog-api-key"] = settings.GOOGLE_API_KEY
+    return _orig_sync_send(self, request, *args, **kwargs)
+httpx.Client.send = _clean_sync_send
 
 import os
 os.environ["GCE_METADATA_HOST"] = "127.0.0.1:9999"
