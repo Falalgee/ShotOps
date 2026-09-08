@@ -25,6 +25,20 @@ class CreateInvestigationRequest(BaseModel):
     query: str
 
 
+
+@app.get("/health")
+def health_check():
+    import os
+    from .config import settings
+    return {
+        "status": "ok",
+        "google_key_prefix": (os.getenv("GOOGLE_API_KEY") or "")[:6],
+        "google_key_len": len(os.getenv("GOOGLE_API_KEY") or ""),
+        "gemini_key_prefix": (os.getenv("GEMINI_API_KEY") or "")[:6],
+        "grafana_url": os.getenv("GRAFANA_URL", ""),
+        "grafana_key_prefix": (os.getenv("GRAFANA_API_KEY") or "")[:6],
+    }
+
 @app.post("/investigations")
 async def create_investigation(req: CreateInvestigationRequest):
     investigation_id = str(uuid.uuid4())
