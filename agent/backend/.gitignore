@@ -8,3 +8,4 @@ __pycache__/
 fix_env.py
 inspect_env.py
 parse_env.py
+.env

@@ -1,6 +1,16 @@
 from google.adk.agents import Agent
 
 from .config import settings
+
+# Force API Key auth to prevent ADK from misidentifying AQ. keys as OAuth
+import google.genai
+_orig_client_init = google.genai.Client.__init__
+def _forced_client_init(self, *args, **kwargs):
+    if not kwargs.get("api_key"):
+        kwargs["api_key"] = settings.GOOGLE_API_KEY
+    _orig_client_init(self, *args, **kwargs)
+google.genai.Client.__init__ = _forced_client_init
+
 from .tools import grafana_query
 
 GRAFANA_URL = settings.GRAFANA_URL
