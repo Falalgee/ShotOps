@@ -1,36 +1,36 @@
 import os
-os.environ["GCE_METADATA_HOST"] = "127.0.0.1:9999"
-
-import httpx
-from app.config import settings
-
-# Intercept outgoing HTTP traffic at the socket level
-_orig_async_send = httpx.AsyncClient.send
-async def _clean_async_send(self, request, *args, **kwargs):
-    if "googleapis.com" in str(request.url):
-        for k in list(request.headers.keys()):
-            if k.lower() == "authorization":
-                del request.headers[k]
-        request.headers["x-goog-api-key"] = settings.GOOGLE_API_KEY
-    return await _orig_async_send(self, request, *args, **kwargs)
-httpx.AsyncClient.send = _clean_async_send
-
-_orig_sync_send = httpx.Client.send
-def _clean_sync_send(self, request, *args, **kwargs):
-    if "googleapis.com" in str(request.url):
-        for k in list(request.headers.keys()):
-            if k.lower() == "authorization":
-                del request.headers[k]
-        request.headers["x-goog-api-key"] = settings.GOOGLE_API_KEY
-    return _orig_sync_send(self, request, *args, **kwargs)
-httpx.Client.send = _clean_sync_send
-
-import os
-os.environ["GCE_METADATA_HOST"] = "127.0.0.1:9999"
-
 import google.auth
 from google.auth.exceptions import DefaultCredentialsError
-google.auth.default = lambda *a, **kw: (_ for _ in ()).throw(DefaultCredentialsError("GCP metadata blocked in favor of API Key"))
+from google.genai import _api_client
+from app.config import settings
+
+# 1. Block GCP default credentials discovery
+google.auth.default = lambda *a, **kw: (_ for _ in ()).throw(DefaultCredentialsError("Enforcing API Key Auth"))
+
+# 2. Patch BaseApiClient to strip GCP host tokens and enforce API Key
+_orig_async = _api_client.BaseApiClient._async_request_once
+async def _clean_async(self, http_request, stream=False):
+    self._credentials = None
+    self.api_key = settings.GOOGLE_API_KEY
+    if hasattr(http_request, "headers"):
+        for k in list(http_request.headers.keys()):
+            if k.lower() == "authorization":
+                del http_request.headers[k]
+        http_request.headers["x-goog-api-key"] = settings.GOOGLE_API_KEY
+    return await _orig_async(self, http_request, stream=stream)
+_api_client.BaseApiClient._async_request_once = _clean_async
+
+_orig_sync = _api_client.BaseApiClient._request_once
+def _clean_sync(self, http_request, stream=False):
+    self._credentials = None
+    self.api_key = settings.GOOGLE_API_KEY
+    if hasattr(http_request, "headers"):
+        for k in list(http_request.headers.keys()):
+            if k.lower() == "authorization":
+                del http_request.headers[k]
+        http_request.headers["x-goog-api-key"] = settings.GOOGLE_API_KEY
+    return _orig_sync(self, http_request, stream=stream)
+_api_client.BaseApiClient._request_once = _clean_sync
 
 from fastapi.staticfiles import StaticFiles
 import asyncio
